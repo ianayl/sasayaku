@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Sasayaku",
+  "version": "0.0.1",
+  "description": "Subtitle extraction and management for YouTube videos",
+  "permissions": [
+    "tabs",
+    "storage",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://*.youtube.com/*",
+    "https://youtube.com/*",
+    "https://youtu.be/*",
+    "http://localhost:7749/*"
+  ],
+  "action": {
+    "default_popup": "index.html",
+    "default_title": "Sasayaku"
+  },
+  "icons": {
+    "16": "icon/icon16.png",
+    "48": "icon/icon48.png",
+    "128": "icon/icon128.png"
+  }
+}

@@ -1,0 +1,48 @@
+# --- Dependency Directories ---
+node_modules/
+.pnpm-store/
+.yarn/
+.yarnpath
+
+# --- Build Outputs ---
+dist/
+build/
+out/
+
+# --- TypeScript ---
+*.tsbuildinfo
+*.swp
+*.swo
+
+# --- Environment / Secrets ---
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# --- IDE / Editor Settings ---
+.vscode/
+.idea/
+.浏览/
+*.suo
+*.user
+.project
+.settings/
+
+# --- OS Specific ---
+.DS_Store
+Thumbs.db
+
+# --- Logs ---
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --- Testing ---
+coverage/
+.nyc_output
