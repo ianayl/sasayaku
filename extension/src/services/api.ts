@@ -51,3 +51,28 @@ export async function processYoutube(baseUrl: string, youtubeUrl: string): Promi
     return false;
   }
 }
+
+/**
+ * Fetches the total count of videos from the server.
+ * @param baseUrl Server URL
+ * @returns A promise that resolves to the count or null if the request fails
+ */
+export async function getVideoCount(baseUrl: string): Promise<number | null> {
+  try {
+    const response = await fetch(`${baseUrl}/api/get-video-count`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    return data.count ?? null;
+  } catch (error) {
+    return null;
+  }
+}

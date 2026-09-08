@@ -1,3 +1,3 @@
-from .utils import gen_diag, get_now
+from .utils import *
 
 # __all__ = ["gen_diag"]

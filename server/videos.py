@@ -6,7 +6,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional
 
-from server.utils.config import CONFIG
+from utils.config import CONFIG
 import utils
 
 
@@ -233,9 +233,11 @@ def get_video(id: int) -> Optional[Video]:
         raise
 
 
-def get_videos_by_id(video_id: str, video_source: VideoSource) -> list[Video]:
-    """Fetches all video records for a given video_id and video_source, sorted newest first."""
-    video_source = utils.enforce_enum(VideoSource, video_source, "get_videos_by_id")
+def get_videos_by_id(video_id: str, video_source: VideoSource, limit: int = 50,
+                     offset: int = 0) -> list[Video]:
+    """Fetches all video records for a given video_id and video_source."""
+    video_source = utils.enforce_enum(VideoSource, video_source,
+                                      "get_videos_by_id")
 
     try:
         with _get_cursor() as cursor:
@@ -244,29 +246,86 @@ def get_videos_by_id(video_id: str, video_source: VideoSource) -> list[Video]:
                 SELECT * FROM videos
                 WHERE video_id = ? AND video_source = ?
                 ORDER BY pending_download_at DESC, id DESC
+                LIMIT ? OFFSET ?
                 """,
-                (video_id, video_source.value)
+                (video_id, video_source.value, limit, offset)
             )
             rows = cursor.fetchall()
             return [Video.from_row(row) for row in rows]
     except Exception as e:
-        diag.error(f"get_videos_by_id: Failed to fetch videos for {video_id} ({video_source.value}): {e}")
+        diag.error(
+            f"get_videos_by_id: Failed to fetch videos for {video_id} ({video_source.value}): {e}"
+        )
         raise
 
 
-def get_videos_by_status(status: VideoStatus) -> list[Video]:
+def get_videos_by_status(status: VideoStatus, limit: int = 50, offset: int = 0) -> list[Video]:
     """Fetches all videos matching a specific status."""
     status = utils.enforce_enum(VideoStatus, status, "get_videos_by_status")
 
     try:
         with _get_cursor() as cursor:
             cursor.execute(
-                "SELECT * FROM videos WHERE status = ? ORDER BY id ASC",
-                (status.value,)
+                "SELECT * FROM videos WHERE status = ? ORDER BY pending_download_at DESC, id DESC LIMIT ? OFFSET ?",
+                (status.value, limit, offset)
             )
             rows = cursor.fetchall()
             return [Video.from_row(row) for row in rows]
     except Exception as e:
-        diag.error(f"get_videos_by_status: Failed to fetch videos with status '{status.value}': {e}")
+        diag.error(
+            f"get_videos_by_status: Failed to fetch videos with status '{status.value}': {e}"
+        )
+        raise
+
+
+def get_all_videos(limit: int = 50, offset: int = 0) -> list[Video]:
+    """Fetches all videos, sorted newest first."""
+    try:
+        with _get_cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT * FROM videos
+                ORDER BY pending_download_at DESC, id DESC
+                LIMIT ? OFFSET ?
+                """,
+                (limit, offset)
+            )
+            rows = cursor.fetchall()
+            return [Video.from_row(row) for row in rows]
+    except Exception as e:
+        diag.error(f"get_all_videos: Failed to fetch all videos: {e}")
+        raise
+
+
+# TODO: I may not need this
+def get_non_fail_videos(limit: int = 50, offset: int = 0) -> list[Video]:
+    """Fetches all videos that have not failed downloading or processing."""
+    try:
+        with _get_cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT * FROM videos
+                WHERE status NOT IN ('download_failed', 'processing_failed')
+                ORDER BY pending_download_at DESC, id DESC
+                LIMIT ? OFFSET ?
+                """,
+                (limit, offset)
+            )
+            rows = cursor.fetchall()
+            return [Video.from_row(row) for row in rows]
+    except Exception as e:
+        diag.error(f"get_non_fail_videos: Failed to fetch non-fail videos: {e}")
+        raise
+
+
+def get_video_count() -> int:
+    """Get number of videos."""
+    try:
+        with _get_cursor() as cursor:
+            cursor.execute("SELECT COUNT(*) FROM videos")
+            res = cursor.fetchone()
+            return res[0] if res else 0
+    except Exception as e:
+        diag.error(f"get_video_count: Failed to fetch video count: {e}")
         raise
 

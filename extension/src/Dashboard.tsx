@@ -5,7 +5,7 @@ import {
   CircularProgress,
 } from "@mui/material";
 import { useEffect, useState } from "react";
-import { processYoutube } from "./services/api";
+import { processYoutube, getVideoCount } from "./services/api";
 import { getCurrentTabInfo } from "./utils";
 
 // TODO: Implement a persistent configuration system to manage server URLs and other settings.
@@ -15,12 +15,13 @@ export function Dashboard() {
   const [tabInfo, setTabInfo] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const [videoCount, setVideoCount] = useState<number | null>(null);
 
   useEffect(() => {
     const init = async () => {
       const info = await getCurrentTabInfo();
       setTabInfo(info);
-			console.log(info);
+      console.log(info);
     };
     init();
   }, []);
@@ -38,6 +39,15 @@ export function Dashboard() {
       setStatus("Error processing video.");
     }
     setTimeout(() => setStatus(null), 3000);
+  };
+
+  const handleFetchVideoCount = async () => {
+    const count = await getVideoCount(BASE_URL);
+    setVideoCount(count);
+    if (count === null) {
+      setStatus("Failed to fetch video count.");
+      setTimeout(() => setStatus(null), 3000);
+    }
   };
 
   return (
@@ -62,6 +72,21 @@ export function Dashboard() {
           Not on a YouTube video page.
         </Typography>
       )}
+
+      <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #eee' }}>
+        <Button
+          variant="outlined"
+          fullWidth
+          onClick={handleFetchVideoCount}
+        >
+          Show Video Count
+        </Button>
+        {videoCount !== null && (
+          <Typography variant="body2" sx={{ mt: 1, textAlign: 'center' }}>
+            Total Videos: {videoCount}
+          </Typography>
+        )}
+      </Box>
     </Box>
   );
 }
