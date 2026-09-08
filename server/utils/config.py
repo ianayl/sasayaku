@@ -7,6 +7,9 @@ def get_defaults() -> Dict[str, Any]:
     return {
         "asbplayer": {
             "server_url": "http://127.0.0.1:8766"
+        },
+        "downloads": {
+            "downloads_path": str(Path.home() / ".local/cache/sasayaku")
         }
     }
 
@@ -27,7 +30,7 @@ def load_config() -> Dict[str, Any]:
         Path.home() / ".config" / "sasayaku" / "config.json"
     ]
     paths = [ p for p in paths if p.exists() ]
-    
+
     if not paths:
         print("Info: No config.json found in PWD or ~/.config/sasayaku.")
         return config
@@ -37,7 +40,7 @@ def load_config() -> Dict[str, Any]:
             loaded_config = json.load(f)
             config = deep_merge(config, loaded_config)
         break
-    
+
     return config
 
 
@@ -53,5 +56,3 @@ def CONFIG(path: str, default=None):
         ) or default
     except (AttributeError, TypeError):
         return default
-
-

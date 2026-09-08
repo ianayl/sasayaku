@@ -1,3 +1,7 @@
+# TODO this flake sucks
+# - get rid of unused caches
+# - make it OS agnostic
+# - see if you can get rid of pkgsCuda
 {
   description = "Sasayaku -- Youtube Whisper subtitles for asbplayer";
 

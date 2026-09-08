@@ -1,0 +1,39 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+
+# Distribution / Build
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.tox/
+.coverage
+htmlcov/
+
+# Environment Variables
+.env
+.env.*
+!.env.example
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+*.old
+
+# Downloaded files + Whisper products
+*.mp3
+*.mp4
+*.srt
