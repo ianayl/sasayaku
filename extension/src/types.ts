@@ -1,8 +1,13 @@
-export interface RecentVideo {
+export interface Video {
+  id: number;
   videoId: string;
-  title: string;
-  url: string;
-  timestamp: number;
+  videoSource: string;
+  tabId: number;
+  status: string;
+  pendingDownloadAt: string;
+  pendingProcessingAt: string | null;
+  finishedAt: string | null;
+  processingTime: number | null;
 }
 
 export interface YouTubeVideoInfo {
@@ -12,13 +17,13 @@ export interface YouTubeVideoInfo {
   isYouTube: boolean;
 }
 
-export interface ServerResponse {
-  success: boolean;
-  message: string;
-  data?: unknown;
-}
-
-export interface ServerConfig {
-  url: string;
-  apiKey?: string;
-}
+// export interface ServerResponse {
+//   success: boolean;
+//   message: string;
+//   data?: unknown;
+// }
+// 
+// export interface ServerConfig {
+//   url: string;
+//   apiKey?: string;
+// }

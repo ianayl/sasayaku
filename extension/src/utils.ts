@@ -1,24 +1,25 @@
-import { YouTubeVideoInfo, ServerConfig } from "./types";
+// import { YouTubeVideoInfo, ServerConfig } from "./types";
+import { YouTubeVideoInfo } from "./types";
 
-const DEFAULT_SERVER_URL = "http://localhost:8000";
-
-export const SERVER_CONFIG_KEY = "server_config";
-
-export function getStoredServerConfig(): Promise<ServerConfig> {
-  return new Promise((resolve) => {
-    chrome.storage.sync.get<{ [SERVER_CONFIG_KEY]: ServerConfig }>([SERVER_CONFIG_KEY]).then((result) => {
-      resolve(
-        result[SERVER_CONFIG_KEY] ?? { url: DEFAULT_SERVER_URL }
-      );
-    });
-  });
-}
-
-export function saveServerConfig(config: ServerConfig): Promise<void> {
-  return new Promise((resolve) => {
-    chrome.storage.sync.set({ [SERVER_CONFIG_KEY]: config }).then(resolve);
-  });
-}
+// const DEFAULT_SERVER_URL = "http://localhost:8000";
+// 
+// export const SERVER_CONFIG_KEY = "server_config";
+// 
+// export function getStoredServerConfig(): Promise<ServerConfig> {
+//   return new Promise((resolve) => {
+//     chrome.storage.sync.get<{ [SERVER_CONFIG_KEY]: ServerConfig }>([SERVER_CONFIG_KEY]).then((result) => {
+//       resolve(
+//         result[SERVER_CONFIG_KEY] ?? { url: DEFAULT_SERVER_URL }
+//       );
+//     });
+//   });
+// }
+// 
+// export function saveServerConfig(config: ServerConfig): Promise<void> {
+//   return new Promise((resolve) => {
+//     chrome.storage.sync.set({ [SERVER_CONFIG_KEY]: config }).then(resolve);
+//   });
+// }
 
 export async function getCurrentTabInfo(): Promise<YouTubeVideoInfo> {
   let tab: any = null;
@@ -72,25 +73,25 @@ export async function getCurrentTabInfo(): Promise<YouTubeVideoInfo> {
   };
 }
 
-export async function sendVideoToBackend(
-  config: ServerConfig,
-  video: YouTubeVideoInfo
-): Promise<Response> {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-
-  if (config.apiKey) {
-    headers["Authorization"] = `Bearer ${config.apiKey}`;
-  }
-
-  return fetch(`${config.url}/api/video`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({
-      url: video.url,
-      videoId: video.videoId,
-      title: video.title,
-    }),
-  });
-}
+// export async function sendVideoToBackend(
+//   config: ServerConfig,
+//   video: YouTubeVideoInfo
+// ): Promise<Response> {
+//   const headers: Record<string, string> = {
+//     "Content-Type": "application/json",
+//   };
+// 
+//   if (config.apiKey) {
+//     headers["Authorization"] = `Bearer ${config.apiKey}`;
+//   }
+// 
+//   return fetch(`${config.url}/api/video`, {
+//     method: "POST",
+//     headers,
+//     body: JSON.stringify({
+//       url: video.url,
+//       videoId: video.videoId,
+//       title: video.title,
+//     }),
+//   });
+// }

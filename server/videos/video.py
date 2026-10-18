@@ -278,7 +278,7 @@ def get_videos_by_status(status: VideoStatus, limit: int = 50, offset: int = 0) 
         raise
 
 
-def get_all_videos(limit: int = 50, offset: int = 0) -> list[Video]:
+def get_all_videos(limit: int = 20, offset: int = 0) -> list[Video]:
     """Fetches all videos, sorted newest first."""
     try:
         with _get_cursor() as cursor:

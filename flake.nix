@@ -44,6 +44,7 @@
         ps.flask
         ps.flask-cors
         ps.srt
+        ps.yt-dlp
         # CTranslate2 needs to be compiled locally with cuda support
         pkgsCuda.python3Packages.ctranslate2
         pkgsCuda.python3Packages.faster-whisper

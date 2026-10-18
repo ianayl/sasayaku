@@ -10,6 +10,20 @@ def get_defaults() -> Dict[str, Any]:
         },
         "downloads": {
             "downloads_path": str(Path.home() / ".local/cache/sasayaku")
+        },
+        "whisper": {
+            "model_size": "large-v2",
+            "batch_size": 16,
+            "vad_options": {
+                "min_silence_duration_ms": 250,
+                "max_speech_duration_s": 7.0
+            },
+            "asr_options": {
+                "beam_size": 10,
+                "suppress_tokens": [],
+                "condition_on_previous_text": True,
+                "temperatures": [0.0]
+            }
         }
     }
 
