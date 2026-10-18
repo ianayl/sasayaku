@@ -7,22 +7,23 @@ from utils.config import CONFIG
 import videos 
 import videos.whisper as whisper
 from videos import VideoSource
+from workers.taskmaster import taskmaster
 
 # Define a blueprint for API routes
 api_bp = Blueprint('api', __name__)
 diag = utils.gen_diag("routes")
 
+# TODO: Consider making /api/health as a health check instead of ping
+
 @api_bp.route('/api/ping', methods=['GET'])
 def ping():
     return jsonify({"status": "pong"}), 200
 
-# TODO: Consider making /api/health as a health check instead of ping
-
 @api_bp.route('/api/process-youtube', methods=['POST'])
 def process_youtube():
     data = request.get_json()
-    youtube_url = data.get('youtube_url')
     # TODO filter links out to make sure they're for youtube
+    youtube_url = data.get('youtube_url')
     if not youtube_url:
         diag.warning("Missing youtube_url in request body")
         return jsonify({"status": "error", "message": "Missing youtube_url in request body"}), 400
@@ -33,22 +34,15 @@ def process_youtube():
         return jsonify({"status": "error", "message": "Malformed youtube url"}), 400
     diag.info(f"Received YouTube video {youtube_id} ({youtube_url})")
 
-    # TODO make this API accept tab id
     youtube = VideoSource.YOUTUBE
-    videos.register_video(youtube_id, youtube, 7)
-    audio_path = videos.download_video(youtube_id, youtube)
+    db_id = videos.register_video(youtube_id, youtube, 7)
 
-    base_path = Path(CONFIG("downloads.downloads_path"))
-    download_dir = base_path / youtube.value / youtube_id
-    download_dir.mkdir(parents=True, exist_ok=True)
-    final_path = download_dir / f"{youtube_id}#7.srt"
+    # Submit to the taskmaster for background processing
+    taskmaster.submit_download_task(db_id=db_id, video_id=youtube_id, video_source=youtube)
 
-    print(f"debug: final_path: {final_path}")
+     # TODO catch RuntimeError and CUDA failures
+     # TODO probably return the failure to the client
 
-    # TODO catch RuntimeError and CUDA failures
-    whisper.generate_subtitles(audio_path, final_path)
-
-    # TODO probably return the failure to the client
     return jsonify({
         "status": "success",
         "message": "URL received and queued for processing"

@@ -44,7 +44,8 @@ def generate_subtitles(
     model_size: Optional[str] = None,
     batch_size: Optional[int] = None,
     vad_options: Optional[Dict[str, Any]] = None,
-    asr_options: Optional[Dict[str, Any]] = None
+    asr_options: Optional[Dict[str, Any]] = None,
+    model=None
 ) -> bool:
     """
     Transcribes an audio file and generates an SRT subtitle file using WhisperX.
@@ -56,6 +57,7 @@ def generate_subtitles(
         batch_size: Batch size for transcription.
         vad_options: Options for Voice Activity Detection.
         asr_options: Options for Automatic Speech Recognition.
+        model: A pre-loaded whisperx model object.
 
     Returns:
         True if successful, False otherwise.
@@ -71,14 +73,17 @@ def generate_subtitles(
     device = "cuda" if torch.cuda.is_available() else "cpu"
     compute_type = "float16" if device == "cuda" else "float32"
 
-    diag.info(f"generate_subtitles: Loading WhisperX model: {m_size} on {device}.")
-    model = whisperx.load_model(
-        m_size,
-        device=device,
-        compute_type=compute_type,
-        asr_options=asr_opts,
-        vad_options=vad_opts
-    )
+    if model is None:
+        diag.info(f"generate_subtitles: Loading WhisperX model: {m_size} on {device}.")
+        model = whisperx.load_model(
+            m_size,
+            device=device,
+            compute_type=compute_type,
+            asr_options=asr_opts,
+            vad_options=vad_opts
+        )
+    else:
+        diag.info(f"generate_subtitles: Using provided WhisperX model.")
 
     diag.info(f"generate_subtitles: Transcribing using WhisperX: '{audio_path}'.")
     audio = whisperx.load_audio(audio_path)

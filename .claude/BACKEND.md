@@ -17,8 +17,14 @@ Flask-based Python backend that manages a pipeline to fetch YouTube videos, tran
 - `server/asbplayer/` — `asbplayer` upload integration
 - `utils/config.py` — Configuration definitions (`whisper`, `downloads`, `asbplayer`)
 
+## Database Schema
+- Database schema for `Video` is stored in `server/videos/video.py`
+
 ## Data Flow
 1. **Registration**: YouTube URL -> `Video` object -> SQLite (`status: pending_download`).
 2. **Download**: Fetch audio -> Save to local path -> Update DB.
 3. **Transcription**: WhisperX processes audio -> Save resulting `.srt` -> Update DB (`status: finished`).
 4. **Delivery**: Push `.srt` to `asbplayer` (Not yet implemented).
+
+## Logging Rules
+- **Logging**: Use `diag = utils.gen_diag("component_name")` from `server/utils/utils.py` for all server-side logging. `component_name` should represent the specific subsystem or worker being updated (e.g., "routes", "taskmaster", "download").
