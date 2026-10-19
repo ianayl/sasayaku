@@ -1,14 +1,19 @@
-import yt_dlp
 from pathlib import Path
-from typing import Optional, Dict
-from utils.config import CONFIG
+from typing import Callable, Dict
+
+import yt_dlp
+
 from .video import VideoSource
 import utils
 
 diag = utils.gen_diag("download")
 
-def download_youtube(video_id: str, tmp_download_path: Path) -> None:
-    """Downloads a video from YouTube using yt-dlp."""
+
+def download_youtube(video_id: str, dest_stem: Path) -> Path:
+    """
+    Downloads audio from YouTube using yt-dlp to <dest_stem>.mp3.
+    Returns the path yt-dlp actually wrote, raises on failure.
+    """
     ydl_opts = {
         'format': 'ba/b',
         'extractor_args': {
@@ -21,47 +26,39 @@ def download_youtube(video_id: str, tmp_download_path: Path) -> None:
             'preferredcodec': 'mp3',
             'preferredquality': '128',
         }],
-        'outtmpl': str(tmp_download_path),
+        'outtmpl': f"{dest_stem}.%(ext)s",
+        # Audio is shared per video_id and replaced on every request
+        'overwrites': True,
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        ydl.download([video_id])
+        info = ydl.extract_info(video_id, download=True)
     # TODO: check for 403 and return error; also check for unknown errors
-    # TODO: make sure this download doesn't hang. 
+    # TODO: make sure this download doesn't hang.
     # TODO: add progress hooks
     # TODO: look into supporting bgutil_ytdlp_pot_provider
 
+    downloads = (info or {}).get("requested_downloads") or []
+    if not downloads or not downloads[0].get("filepath"):
+        raise RuntimeError(f"yt-dlp did not report an output file for {video_id}")
+    return Path(downloads[0]["filepath"])
 
-def download_video(video_id: str, source: VideoSource) -> Optional[Path]:
+
+_DOWNLOADERS: Dict[VideoSource, Callable[[str, Path], Path]] = {
+    VideoSource.YOUTUBE: download_youtube,
+}
+
+
+def download_audio(video_id: str, source: VideoSource, dest_stem: Path) -> Path:
     """
-    Downloads a video from the specified source. Returns a path to the 
-    downloaded .mp3 file if success, or None if failed.
+    Downloads audio for a video from the given source to <dest_stem>.<ext>.
+    Returns the path of the downloaded file; raises on failure.
     """
-    # Path construction: <base_path>/<source_name>/<video_id>/<video_id>-7.mp3
-    base_path = Path(CONFIG("downloads.downloads_path"))
-    download_dir = base_path / source.value / video_id
-    download_dir.mkdir(parents=True, exist_ok=True)
-    tmp_download_path = download_dir / f"{video_id}#7"
-    final_path = download_dir / f"{video_id}#7.mp3"
-    # TODO: dont put video id as 7; either receive a video id or don't download.
+    source = VideoSource(source)
+    download_fn = _DOWNLOADERS.get(source)
+    if download_fn is None:
+        raise ValueError(f"No downloader registered for source {source.value}")
 
-    # TODO: Implement a proper orchestrator singleton to handle status updates and database persistence.
-    # Do not implement DB updates or status tracking in this module for now. Write these as TODO comments instead.
-
-    # Dispatch mapping for different sources
-    download_fn_map = {
-        VideoSource.YOUTUBE: download_youtube,
-    }
-
-    download_fn = download_fn_map[source]
-    if not download_fn:
-        diag.error(f"download_video: No download function found for source {source}")
-        return None
-
-    try:
-        download_fn(video_id, tmp_download_path)
-        return final_path
-    except Exception as e:
-        diag.error(f"download_video: Failed to download video {video_id} via {source}: {e}")
-        return None
+    diag.info(f"download_audio: Downloading {source.value}:{video_id} to {dest_stem}.*")
+    return download_fn(video_id, dest_stem)
 

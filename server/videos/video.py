@@ -86,6 +86,43 @@ class Video:
         }
 
 
+@dataclass
+class VideoMetadata:
+    video_id: str
+    video_source: VideoSource
+    title: Optional[str]
+    author: Optional[str]
+    metadata_date: Optional[datetime]
+
+    def __post_init__(self):
+        if isinstance(self.video_source, str):
+            self.video_source = VideoSource(self.video_source)
+
+    @classmethod
+    def from_row(cls, row: sqlite3.Row) -> "VideoMetadata":
+        def parse_dt(val: Optional[str]) -> Optional[datetime]:
+            return datetime.fromisoformat(val) if val else None
+
+        return cls(
+            video_id=row["video_id"],
+            video_source=VideoSource(row["video_source"]),
+            title=row["title"],
+            author=row["author"],
+            metadata_date=parse_dt(row["metadata_date"]),
+        )
+
+    def to_dict(self) -> dict:
+        return {
+            "video_id": self.video_id,
+            "video_source": self.video_source.value,
+            "title": self.title,
+            "author": self.author,
+            "metadata_date": (
+                self.metadata_date.isoformat() if self.metadata_date else None
+            ),
+        }
+
+
 @contextmanager
 def _get_cursor():
     """Context manager that handles connection, transaction commit/rollback, and closing."""
@@ -103,7 +140,7 @@ def init_db():
     """Initializes the SQLite database."""
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-    def table_schema(table_name: str) -> str:
+    def videos_table_schema(table_name: str) -> str:
         return f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -119,8 +156,19 @@ def init_db():
             CHECK (video_source IN ('youtube'))
         )
         """
-        # TODO also store video transcription options and metadata 
-        # this might get hectic, we'll also want to support translations.
+
+    def video_metadata_table_schema(table_name: str) -> str:
+        return f"""
+        CREATE TABLE IF NOT EXISTS {table_name} (
+            video_id TEXT(11) NOT NULL,
+            video_source TEXT NOT NULL,
+            title TEXT,
+            author TEXT,
+            metadata_date TIMESTAMP,
+            PRIMARY KEY (video_source, video_id),
+            CHECK (video_source IN ('youtube'))
+        )
+        """
 
     def create_indexes(cursor, table_name: str):
         cursor.execute(f"CREATE INDEX IF NOT EXISTS idx_{table_name}_video_id ON {table_name}(video_id)")
@@ -128,7 +176,8 @@ def init_db():
 
     try:
         with _get_cursor() as cursor:
-            cursor.execute(table_schema("videos"))
+            cursor.execute(videos_table_schema("videos"))
+            cursor.execute(video_metadata_table_schema("video_metadata"))
             create_indexes(cursor, "videos")
         diag.info(f"init_db: database initialized at {DB_PATH}.")
     except (sqlite3.Error, OSError) as e:
@@ -329,3 +378,64 @@ def get_video_count() -> int:
         diag.error(f"get_video_count: Failed to fetch video count: {e}")
         raise
 
+
+def upsert_video_metadata(
+    video_id: str,
+    video_source: VideoSource,
+    title: Optional[str],
+    author: Optional[str],
+    metadata_date: Optional[datetime],
+) -> None:
+    """Stores the latest metadata snapshot for a video."""
+    video_source = utils.enforce_enum(VideoSource, video_source, "upsert_video_metadata")
+    metadata_date_value = metadata_date.isoformat() if metadata_date else None
+
+    try:
+        with _get_cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO video_metadata (
+                    video_id, video_source, title, author, metadata_date
+                ) VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(video_source, video_id) DO UPDATE SET
+                    title = excluded.title,
+                    author = excluded.author,
+                    metadata_date = excluded.metadata_date
+                """,
+                (
+                    video_id,
+                    video_source.value,
+                    title,
+                    author,
+                    metadata_date_value,
+                ),
+            )
+    except Exception as e:
+        diag.error(
+            f"upsert_video_metadata: Failed to store metadata for {video_source.value}:{video_id}: {e}"
+        )
+        raise
+
+
+def get_video_metadata(
+    video_id: str, video_source: VideoSource
+) -> Optional[VideoMetadata]:
+    """Fetches the latest metadata snapshot for a video."""
+    video_source = utils.enforce_enum(VideoSource, video_source, "get_video_metadata")
+
+    try:
+        with _get_cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT * FROM video_metadata
+                WHERE video_id = ? AND video_source = ?
+                """,
+                (video_id, video_source.value),
+            )
+            row = cursor.fetchone()
+            return VideoMetadata.from_row(row) if row else None
+    except Exception as e:
+        diag.error(
+            f"get_video_metadata: Failed to fetch metadata for {video_source.value}:{video_id}: {e}"
+        )
+        raise

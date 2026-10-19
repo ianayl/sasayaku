@@ -38,7 +38,7 @@ def process_youtube():
     db_id = videos.register_video(youtube_id, youtube, 7)
 
     # Submit to the taskmaster for background processing
-    taskmaster.submit_download_task(db_id=db_id, video_id=youtube_id, video_source=youtube)
+    taskmaster.submit(db_id=db_id, video_id=youtube_id, source=youtube)
 
      # TODO catch RuntimeError and CUDA failures
      # TODO probably return the failure to the client
