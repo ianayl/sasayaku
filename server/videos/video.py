@@ -36,6 +36,7 @@ class Video:
     status: VideoStatus
     pending_download_at: datetime
     id: Optional[int] = None
+    metadata: Optional["VideoMetadata"] = None
     pending_processing_at: Optional[datetime] = None
     finished_at: Optional[datetime] = None
     processing_time: Optional[int] = None
@@ -53,6 +54,10 @@ class Video:
         def parse_dt(val: Optional[str]) -> Optional[datetime]:
             return datetime.fromisoformat(val) if val else None
 
+        metadata = None
+        if "metadata_video_id" in row.keys() and row["metadata_video_id"] is not None:
+            metadata = VideoMetadata.from_joined_row(row)
+
         return cls(
             id=row["id"],
             video_id=row["video_id"],
@@ -60,6 +65,7 @@ class Video:
             tab_id=row["tab_id"],
             status=VideoStatus(row["status"]),
             pending_download_at=datetime.fromisoformat(row["pending_download_at"]),
+            metadata=metadata,
             pending_processing_at=parse_dt(row["pending_processing_at"]),
             finished_at=parse_dt(row["finished_at"]),
             processing_time=row["processing_time"],
@@ -74,6 +80,7 @@ class Video:
             "tab_id": self.tab_id,
             "status": self.status.value,
             "pending_download_at": self.pending_download_at.isoformat(),
+            "metadata": self.metadata.to_dict() if self.metadata else None,
             "pending_processing_at": (
                 self.pending_processing_at.isoformat()
                 if self.pending_processing_at
@@ -93,6 +100,7 @@ class VideoMetadata:
     title: Optional[str]
     author: Optional[str]
     metadata_date: Optional[datetime]
+    thumbnail_url: Optional[str] = None
 
     def __post_init__(self):
         if isinstance(self.video_source, str):
@@ -111,6 +119,19 @@ class VideoMetadata:
             metadata_date=parse_dt(row["metadata_date"]),
         )
 
+    @classmethod
+    def from_joined_row(cls, row: sqlite3.Row) -> "VideoMetadata":
+        def parse_dt(val: Optional[str]) -> Optional[datetime]:
+            return datetime.fromisoformat(val) if val else None
+
+        return cls(
+            video_id=row["metadata_video_id"],
+            video_source=VideoSource(row["metadata_video_source"]),
+            title=row["metadata_title"],
+            author=row["metadata_author"],
+            metadata_date=parse_dt(row["metadata_date"]),
+        )
+
     def to_dict(self) -> dict:
         return {
             "video_id": self.video_id,
@@ -120,6 +141,7 @@ class VideoMetadata:
             "metadata_date": (
                 self.metadata_date.isoformat() if self.metadata_date else None
             ),
+            "thumbnail_url": self.thumbnail_url,
         }
 
 
@@ -333,7 +355,25 @@ def get_all_videos(limit: int = 20, offset: int = 0) -> list[Video]:
         with _get_cursor() as cursor:
             cursor.execute(
                 """
-                SELECT * FROM videos
+                SELECT
+                    v.id AS id,
+                    v.video_id AS video_id,
+                    v.video_source AS video_source,
+                    v.tab_id AS tab_id,
+                    v.status AS status,
+                    v.pending_download_at AS pending_download_at,
+                    v.pending_processing_at AS pending_processing_at,
+                    v.finished_at AS finished_at,
+                    v.processing_time AS processing_time,
+                    m.video_id AS metadata_video_id,
+                    m.video_source AS metadata_video_source,
+                    m.title AS metadata_title,
+                    m.author AS metadata_author,
+                    m.metadata_date AS metadata_date
+                FROM videos v
+                LEFT JOIN video_metadata m
+                    ON m.video_source = v.video_source
+                   AND m.video_id = v.video_id
                 ORDER BY pending_download_at DESC, id DESC
                 LIMIT ? OFFSET ?
                 """,

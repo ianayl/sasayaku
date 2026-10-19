@@ -108,6 +108,14 @@ export async function getAllVideos(baseUrl: string, limit: number = 20, offset: 
       tabId: v.tab_id,
       status: v.status,
       pendingDownloadAt: v.pending_download_at,
+      metadata: v.metadata ? {
+        videoId: v.metadata.video_id,
+        videoSource: v.metadata.video_source,
+        title: v.metadata.title,
+        author: v.metadata.author,
+        metadataDate: v.metadata.metadata_date,
+        thumbnailUrl: `${baseUrl}/api/videos/${v.metadata.video_source}/${v.metadata.video_id}/thumbnail`
+      } : null,
       pendingProcessingAt: v.pending_processing_at,
       finishedAt: v.finished_at,
       processingTime: v.processing_time

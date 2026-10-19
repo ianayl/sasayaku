@@ -5,9 +5,19 @@ export interface Video {
   tabId: number;
   status: string;
   pendingDownloadAt: string;
+  metadata: VideoMetadata | null;
   pendingProcessingAt: string | null;
   finishedAt: string | null;
   processingTime: number | null;
+}
+
+export interface VideoMetadata {
+  videoId: string;
+  videoSource: string;
+  title: string | null;
+  author: string | null;
+  metadataDate: string | null;
+  thumbnailUrl: string | null;
 }
 
 export interface YouTubeVideoInfo {

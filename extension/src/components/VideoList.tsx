@@ -43,10 +43,24 @@ export function VideoList({ videos, isLoading, currentPage, onPageChange }: Vide
       <List>
         {videos.map((video) => (
           <ListItem key={video.id}>
-            <ListItemText
-              primary={video.videoId}
-              secondary={`Source: ${video.videoSource} | Status: ${video.status}`}
-            />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+              {video.metadata?.thumbnailUrl ? (
+                <Box
+                  component="img"
+                  src={video.metadata.thumbnailUrl}
+                  alt={video.metadata.title ?? video.videoId}
+                  sx={{ width: 48, height: 48, borderRadius: 1, objectFit: 'cover' }}
+                />
+              ) : null}
+              <ListItemText
+                primary={video.metadata?.title ?? video.videoId}
+                secondary={
+                  video.metadata?.author
+                    ? `Author: ${video.metadata.author} | Source: ${video.videoSource} | Status: ${video.status}`
+                    : `Source: ${video.videoSource} | Status: ${video.status}`
+                }
+              />
+            </Box>
           </ListItem>
         ))}
       </List>

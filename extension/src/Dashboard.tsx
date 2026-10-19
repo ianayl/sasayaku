@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { processYoutube, getVideoCount, getAllVideos } from "./services/api";
 import { getCurrentTabInfo } from "./utils";
 import { VideoList } from "./components/VideoList";
+import type { Video } from "./types";
 
 // TODO: Add a system that automatically checks the database for a video_id,
 // and a card popup if we already have the subtitles generated.
@@ -22,7 +23,7 @@ export function Dashboard() {
   const [videoCount, setVideoCount] = useState<number | null>(null);
 
   // Video List State
-  const [videos, setVideos] = useState<any[]>([]);
+  const [videos, setVideos] = useState<Video[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
   const [isLoadingVideos, setIsLoadingVideos] = useState(false);
   const LIMIT = 20;

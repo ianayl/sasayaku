@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, send_file
 from flask_cors import CORS
 from pathlib import Path
 
@@ -64,9 +64,7 @@ def get_all_videos():
     limit = request.args.get('limit', default=20, type=int)
     offset = request.args.get('offset', default=0, type=int)
     videos_list = videos.get_all_videos(limit=limit, offset=offset)
-
-    # Convert Video objects to dictionaries using their to_dict methods
-    results = [v.to_dict() for v in videos_list]
+    results = [video.to_dict() for video in videos_list]
 
     diag.info(f"Received request for all videos (limit={limit}, offset={offset}): {len(results)}")
     return jsonify({
@@ -76,3 +74,15 @@ def get_all_videos():
     }), 200
 
 
+@api_bp.route('/api/videos/<video_source>/<video_id>/thumbnail', methods=['GET'])
+def get_video_thumbnail(video_source, video_id):
+    try:
+        source = utils.enforce_enum(VideoSource, video_source, "get_video_thumbnail")
+    except ValueError:
+        return jsonify({"status": "error", "message": "Unsupported video source"}), 400
+
+    thumbnail_file = videos.JobPaths.thumbnail_path_for(source, video_id)
+    if thumbnail_file is None:
+        return jsonify({"status": "error", "message": "Thumbnail not found"}), 404
+
+    return send_file(thumbnail_file)
